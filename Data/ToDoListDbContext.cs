@@ -9,5 +9,5 @@ public class ToDoListDbContext : DbContext
     {
     }
 
-    public DbSet<ToDoListItem> Specials { get; set; }
+    public DbSet<ToDoListItem> ToDoList { get; set; }
 }    

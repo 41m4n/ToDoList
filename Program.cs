@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using ToDoList.Components;
 using ToDoList.Data;
+using ToDoList.Repositories;
 using ToDoList.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,9 +11,11 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddHttpClient();
-builder.Services.AddSqlite<ToDoListDbContext>("Data Source=ToDoList.db");
+builder.Services.AddDbContext<ToDoListDbContext>(options =>
+    options.UseSqlite("Data Source=ToDoList.db"));
 
-builder.Services.AddSingleton<ToDoListService>();
+builder.Services.AddScoped<IToDoListRepositories, ToDoListRepositories>();
+builder.Services.AddScoped<ToDoListService>();
 
 var app = builder.Build();
 
@@ -31,5 +35,11 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ToDoListDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();
