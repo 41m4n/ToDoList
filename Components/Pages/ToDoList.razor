@@ -7,44 +7,106 @@
 
 <h3>ToDoList</h3>
 
+<select style="margin-bottom:10xp" @onchange="OnFilterChanged" class="form-select w-auto me-3">
+    <option value="all">All</option>
+    <option value="pending">Pending</option>
+    <option value="completed">Completed</option>
+</select>
 <ul >
-    @if (toDoListItems != null)
+    @if (toDoListItems != null && toDoListItems.Count > 0)
     {
-        @foreach (var toDoListItem in toDoListItems)
-        {
-        <li>
-            <div>
-                <input type="checkbox" @bind="toDoListItem.IsDone" />
-                <input @bind="toDoListItem.Name" />
-            </div>
-        </li>
-        }
+            <table style="width: 100%;">
+            <thead>
+            <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>IsCompleted</th>
+            <th>CreatedAt</th>
+            <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var toDoListItem in toDoListItems)
+            {
+                <tr>
+                    <td>@toDoListItem.Title</td>
+                    <td>@toDoListItem.Description</td>
+                    <td>@toDoListItem.CreatedAt</td>
+                    <td><input type="checkbox" checked="@toDoListItem.IsCompleted" @onchange="@(() => ToggleIsCompleteToDoListItem(toDoListItem))" /></td>
+                    <td><button @onclick="@(() => DeleteToDo(toDoListItem.Id))" >Delete</button></td>
+                </tr>
+            }
+            </tbody>
+            </table>
+    }else if (toDoListItems != null && toDoListItems.Count == 0)
+    {
+        <li>No items found.</li>
+    }else{
+        <li>Loading...</li>
     }
 </ul>
 
-<input @bind="newTodo" />
+<br />
+
+<h4>Add New ToDo</h4>
+
+<input @bind="newTodo" placeholder="Title" />
+<input @bind="newToDoDescription" placeholder="Description" />
 <button @onclick="AddTodo">Add todo</button>
 
 @code {
     List<ToDoListItem> toDoListItems = new();
     public string newTodo = "";
+    public string newToDoDescription = "";
+    public string currentFilter = "all";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        toDoListItems.AddRange(new List<ToDoListItem>
-        {
-            new ToDoListItem { Name = "The Baconatorizor"},
-            new ToDoListItem { Name = "Buffalo chicken"},
-            new ToDoListItem { Name = "Veggie Delight"},
-        });
-    }   
+        await GetToDoListItems();
+    }
 
-    void AddTodo()
+    async Task GetToDoListItems()
+    {        
+        bool? filter = currentFilter switch
+        {
+            "completed" => true,
+            "pending" => false,
+            _ => null
+        };
+
+        toDoListItems = await ToDoListSvc.GetFilteredToDoListItemsAsync(filter);
+    }
+
+    async Task OnFilterChanged(ChangeEventArgs e)
+    {
+        currentFilter = e.Value?.ToString() ?? "all";
+        await GetToDoListItems();
+    }
+
+    async Task AddTodo()
     {
         if (!string.IsNullOrWhiteSpace(newTodo))
         {
-            toDoListItems.Add(new ToDoListItem { Name = newTodo });
+            await ToDoListSvc.AddToDoListItemAsync(new ToDoListItem { Title = newTodo, Description = newToDoDescription, IsCompleted = false });            
             newTodo = string.Empty;
+            newToDoDescription = string.Empty;
+            toDoListItems = await ToDoListSvc.GetToDoListItemsAsync();
+            StateHasChanged();
         }
     } 
+
+    async Task DeleteToDo(int id)
+    {
+        await ToDoListSvc.DeleteToDoListItemAsync(id);      
+        await GetToDoListItems();
+        StateHasChanged();
+    } 
+
+    async Task ToggleIsCompleteToDoListItem(ToDoListItem item)
+    {
+        item.IsCompleted = !item.IsCompleted;
+        await ToDoListSvc.UpdateToDoListItemAsync(item);      
+        await GetToDoListItems();
+        StateHasChanged();
+    }
 }
