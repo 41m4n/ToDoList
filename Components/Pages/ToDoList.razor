@@ -1,7 +1,50 @@
 ﻿@page "/todolist"
+@using global::ToDoList.Models
+@using global::ToDoList.Service
+@rendermode InteractiveServer
+@inject ToDoListService ToDoListSvc
+
 
 <h3>ToDoList</h3>
 
+<ul >
+    @if (toDoListItems != null)
+    {
+        @foreach (var toDoListItem in toDoListItems)
+        {
+        <li>
+            <div>
+                <input type="checkbox" @bind="toDoListItem.IsDone" />
+                <input @bind="toDoListItem.Name" />
+            </div>
+        </li>
+        }
+    }
+</ul>
+
+<input @bind="newTodo" />
+<button @onclick="AddTodo">Add todo</button>
+
 @code {
-    
+    List<ToDoListItem> toDoListItems = new();
+    public string newTodo = "";
+
+    protected override void OnInitialized()
+    {
+        toDoListItems.AddRange(new List<ToDoListItem>
+        {
+            new ToDoListItem { Name = "The Baconatorizor"},
+            new ToDoListItem { Name = "Buffalo chicken"},
+            new ToDoListItem { Name = "Veggie Delight"},
+        });
+    }   
+
+    void AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            toDoListItems.Add(new ToDoListItem { Name = newTodo });
+            newTodo = string.Empty;
+        }
+    } 
 }

@@ -1,10 +1,17 @@
 using ToDoList.Components;
+using ToDoList.Data;
+using ToDoList.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddHttpClient();
+builder.Services.AddSqlite<ToDoListDbContext>("Data Source=ToDoList.db");
+
+builder.Services.AddSingleton<ToDoListService>();
 
 var app = builder.Build();
 
